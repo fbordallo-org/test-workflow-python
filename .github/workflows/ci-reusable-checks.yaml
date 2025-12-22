@@ -1,0 +1,41 @@
+
+---
+name: 🛠️ CI Reusable Checks
+
+on:
+  workflow_call:
+
+jobs:
+  trufflehog:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Trufflehog
+        uses: trufflesecurity/trufflehog@v3.92.3
+        with:
+          extra_args: --results=verified,unknown
+
+  linter:
+    if: false
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Super-linter
+        uses: super-linter/super-linter@v8.3.1
+        env:
+          # To report GitHub Actions status checks
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
