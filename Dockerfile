@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13-slim as build
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -15,6 +15,17 @@ RUN uv sync --no-dev --no-install-project
 
 # Copy application code
 COPY main.py .
+
+FROM build as test
+
+# Install test dependencies
+RUN uv sync --dev --no-install-project
+
+# Run tests
+COPY tests ./tests
+RUN uv run pytest tests
+
+FROM build as release
 
 # Expose the port
 EXPOSE 8000

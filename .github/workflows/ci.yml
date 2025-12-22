@@ -1,0 +1,42 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci-reusable-checks.yaml
+    name: Lint and Secret detection
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    #uses: StaatsolieNV/workflows/.github/workflows/ci-reusable-checks.yaml@feat/initial-workflows
+  
+  test-and-release:
+    uses: ./.github/workflows/ci-reusable-docker.yaml
+    name: Build, Test and Release
+    needs: [validate]
+    secrets: inherit
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    with:
+      environment: 'development'
+      pull-request: ${{ github.event_name == 'pull_request' }}
+      acr-name: ${{ vars.ACR_NAME }}
+      release-please-release-type: 'python'
+
+ # deploy:
+ #   name: Deploy to Azure App Service
+ #   needs: [validate, test-and-release]
+ #   secrets: inherit
+ #   uses: StaatsolieNV/workflows/.github/workflows/ci-reusable-webapp-deploy.yaml@feat/initial-workflows
+ #   with: docker_image: ${{ needs.test-and-release.outputs.docker_image }}
+      
