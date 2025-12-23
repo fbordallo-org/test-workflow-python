@@ -1,0 +1,50 @@
+---
+# This workflow requires a multi-stage Dockerfile with the following targets:
+# - build: Compiles the application and installs dependencies
+# - test: Runs the test suite
+# - release: Creates the final production image
+name: 🐳 CI Reusable Release
+permissions:
+  contents: write
+  issues: write
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The environment to build the Docker image for
+        required: true
+        type: string
+      pull-request:
+        description: Whether the workflow is running in a pull request
+        required: false
+        default: false
+        type: boolean
+      acr-name:
+        description: The name of the Azure Container Registry
+        required: true
+        type: string
+      release-please-release-type:
+        description: The release type for Release Please
+        required: false
+        default: simple
+        type: string
+
+jobs:
+  release:
+    name: 🔖 Release
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      issues: write
+    outputs:
+      release-created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Release Please
+        uses: googleapis/release-please-action@v4.4.0
+        id: release
+        with:
+          release-type: ${{ inputs.release-please-release-type }}
+          skip-github-pull-request: true
