@@ -89,6 +89,9 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+    outputs:
+      release-created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - name: Release Please
         uses: googleapis/release-please-action@v4.4.0
@@ -102,7 +105,7 @@ jobs:
       - build
       - test
       - release
-    if: ${{ github.job.release.steps.release.outputs.release_created }}
+    if: ${{ needs.release.outputs.release-created == 'true' }}
     runs-on: ubuntu-24.04
     outputs:
       docker-image: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}@${{ steps.docker-release.outputs.digest }}
@@ -124,14 +127,6 @@ jobs:
         if: false
         run: az acr login --name ${{ inputs.acr-name }}
 
-      - name: Docker metadata
-        id: docker-metadata
-        uses: docker/metadata-action@v5.7.0
-        with:
-          images: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{version}}
-
       - name: Docker release
         id: docker-release
         uses: docker/build-push-action@v6.18.0
@@ -140,8 +135,13 @@ jobs:
           # The full job depends on release creation, so we can directly push          
           push: false
           target: release
-          tags: ${{ steps.docker-metadata.outputs.tags }}
-          labels: ${{ steps.docker-metadata.outputs.labels }}
+          tags: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ needs.release.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+            org.opencontainers.image.version=${{ needs.release.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,name=gha-cache
           
