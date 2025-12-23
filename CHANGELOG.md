@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.0...v1.0.1) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ci:** added docker buildx action ([8f875fe](https://github.com/fbordallo-org/test-workflow-python/commit/8f875fead339bd8d83198674f71472b8a86515f7))
+* **ci:** added docker buildx action ([ca76a2b](https://github.com/fbordallo-org/test-workflow-python/commit/ca76a2bd117abd016fb461e835ddf08c698c4496))
+
 ## [1.0.0](https://github.com/fbordallo-org/test-workflow-python/compare/v0.1.0...v1.0.0) (2025-12-23)
 
 
