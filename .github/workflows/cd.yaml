@@ -5,6 +5,14 @@ on:
     branches:
       - main
 
+permissions:
+  # required for release-please
+  contents: write
+  issues: write
+  pull-requests: write
+  # required for ACR login
+  id-token: write
+
 jobs:
   
   release:
