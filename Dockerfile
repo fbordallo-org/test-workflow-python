@@ -27,6 +27,9 @@ RUN uv run pytest tests
 
 FROM build as release
 
+# Set environment variables for production
+ENV MY_PROD_ENVVAR=production_value
+
 # Expose the port
 EXPOSE 8080
 
