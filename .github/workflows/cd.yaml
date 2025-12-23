@@ -8,12 +8,18 @@ on:
 jobs:
   
   release:
-    uses: ./.github/workflows/cd-reusable-release.yaml
-    with:
-      release-please-release-type: 'python'
-    name: Release
+    name: 🔖 Release
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Release Please
+        uses: googleapis/release-please-action@v4.4.0
+        id: release
+        with:
+          release-type: python
 
   push-image:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
