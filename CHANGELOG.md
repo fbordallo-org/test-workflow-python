@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.6](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.5...v1.0.6) (2025-12-23)
+
+
+### Documentation
+
+* add title to README.md ([bd08cf3](https://github.com/fbordallo-org/test-workflow-python/commit/bd08cf31af99e74166f29ae9a7ce50f280e8e204))
+* add title to README.md ([25ad881](https://github.com/fbordallo-org/test-workflow-python/commit/25ad88178c5a4ef8ca844507337f66a32edaaca2))
+
 ## [1.0.5](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.4...v1.0.5) (2025-12-23)
 
 
