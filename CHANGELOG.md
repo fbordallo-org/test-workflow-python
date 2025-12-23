@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.1...v1.0.2) (2025-12-23)
+
+
+### Bug Fixes
+
+* casing in Dockerfile ([27aa5a5](https://github.com/fbordallo-org/test-workflow-python/commit/27aa5a508db5587cd158f7d13422529b1ecad9c8))
+* casing in Dockerfile ([5c61790](https://github.com/fbordallo-org/test-workflow-python/commit/5c6179054c380a107588efe1eb00db2b9a7e4ede))
+
 ## [1.0.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.0...v1.0.1) (2025-12-23)
 
 
