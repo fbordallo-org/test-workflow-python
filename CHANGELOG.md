@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/fbordallo-org/test-workflow-python/compare/v0.1.0...v1.0.0) (2025-12-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* change port from 8000 to 8080
+
+### build[image]
+
+* change port from 8000 to 8080 ([77c66e7](https://github.com/fbordallo-org/test-workflow-python/commit/77c66e7643a5d3c11eddcadda01b1ceec0eeeea3))
+
 ## 0.1.0 (2025-12-23)
 
 
