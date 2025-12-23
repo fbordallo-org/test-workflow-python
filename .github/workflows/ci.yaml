@@ -1,0 +1,23 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci-reusable-checks.yaml
+    name: Lint and Secret detection
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+  
+  test:
+    uses: ./.github/workflows/cicd-reusable-docker.yaml
+    name: Test
+    with:
+      target: 'test'
+
+  

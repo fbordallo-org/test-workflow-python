@@ -1,0 +1,54 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  
+  release:
+    uses: ./.github/workflows/cd-reusable-release.yaml
+    name: Release
+    permissions:
+      contents: write
+      issues: write
+
+  push-image:
+    uses: ./.github/workflows/cicd-reusable-docker.yaml
+    name: Build Release Image and Push
+    needs: [release]
+    # This job is only executed if a release was created
+    # release-please can exit successfully without creating a release
+    # and in that case we want to break the push and deployment steps
+    if: needs.release.outputs.release-created == 'true'
+    secrets: inherit
+    permissions:
+      contents: write
+      issues: write
+      id-token: write
+    with:
+      push: true
+      target: 'release'
+      acr-name: ${{ vars.ACR_NAME }}
+      tag: ${{ needs.release.outputs.version }}
+
+  deploy-development:
+    name: Deploy to Azure App Service Development
+    needs: [release, push-image]
+    secrets: inherit
+    uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
+    with:
+      docker-image: ${{ needs.push-image.outputs.docker-image }}
+      environment: 'development'
+      webapp-name: ${{ vars.AZURE_WEBAPP_NAME_DEVELOPMENT }}
+      
+  deploy-production:
+    name: Deploy to Azure App Service Production
+    needs: [release, push-image, deploy-development]
+    secrets: inherit
+    uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
+    with:
+      docker-image: ${{ needs.push-image.outputs.docker-image }}
+      environment: 'production'
+      webapp-name: ${{ vars.AZURE_WEBAPP_NAME_PRODUCTION }}
