@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.3...v1.0.4) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ci:** added outputs to release job ([cda4b7c](https://github.com/fbordallo-org/test-workflow-python/commit/cda4b7c17598069475c026676bbf995fbb065436))
+
 ## [1.0.3](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.2...v1.0.3) (2025-12-23)
 
 
