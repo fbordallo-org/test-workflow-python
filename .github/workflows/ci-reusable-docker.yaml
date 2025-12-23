@@ -108,9 +108,9 @@ jobs:
     if: ${{ needs.release.outputs.release-created == 'true' }}
     runs-on: ubuntu-24.04
     outputs:
-      docker-image: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}@${{ steps.docker-release.outputs.digest }}
-      docker-image-tags: ${{ steps.docker-metadata.outputs.tags }}
-      docker-image-digest: ${{ steps.docker-release.outputs.digest }}
+      # The image was built and pushed successfully
+      image-built-and-pushed: ${{ steps.docker-release.outcome == 'success' }}
+      docker-image: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ needs.release.outputs.version }}
     steps:
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v6.0.1
