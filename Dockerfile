@@ -9,17 +9,18 @@ WORKDIR /app
 # Copy project files
 COPY pyproject.toml .
 COPY .python-version .
-
-# Install dependencies
-RUN uv sync --no-dev --no-install-project
+COPY README.md .
 
 # Copy application code
-COPY main.py .
+COPY src ./src
+
+# Install dependencies and project
+RUN uv sync --no-dev
 
 FROM build AS test
 
 # Install test dependencies
-RUN uv sync --dev --no-install-project
+RUN uv sync --dev
 
 # Run tests
 COPY tests ./tests
@@ -31,7 +32,7 @@ FROM build AS release
 ENV MY_PROD_ENVVAR=production_value
 
 # Expose the port
-EXPOSE 8080
+EXPOSE 8000
 
 # Run the application
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "simple_api:app", "--host", "0.0.0.0", "--port", "8000"]
