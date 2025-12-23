@@ -1,4 +1,4 @@
-FROM python:3.13-slim as build
+FROM python:3.13-slim AS build
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -16,7 +16,7 @@ RUN uv sync --no-dev --no-install-project
 # Copy application code
 COPY main.py .
 
-FROM build as test
+FROM build AS test
 
 # Install test dependencies
 RUN uv sync --dev --no-install-project
@@ -25,7 +25,7 @@ RUN uv sync --dev --no-install-project
 COPY tests ./tests
 RUN uv run pytest tests
 
-FROM build as release
+FROM build AS release
 
 # Set environment variables for production
 ENV MY_PROD_ENVVAR=production_value
