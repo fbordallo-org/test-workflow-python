@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.4...v1.0.5) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ci:** skip pushing for testing ([7db0d8d](https://github.com/fbordallo-org/test-workflow-python/commit/7db0d8ddef5c820e72435b22ef040f1f63dc9bc2))
+
 ## [1.0.4](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.3...v1.0.4) (2025-12-23)
 
 
