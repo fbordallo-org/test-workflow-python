@@ -9,10 +9,11 @@ jobs:
   
   release:
     uses: ./.github/workflows/cd-reusable-release.yaml
+    with:
+      release-please-release-type: 'python'
     name: Release
     permissions:
       contents: write
-      issues: write
 
   push-image:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
