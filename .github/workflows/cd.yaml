@@ -44,7 +44,7 @@ jobs:
     permissions:
       id-token: write
     with:
-      push: true
+      push: false # Set to true to push the image to ACR, dry run otherwise
       target: 'release'
       acr-name: ${{ vars.ACR_NAME }}
       tag: ${{ needs.release.outputs.version }}
