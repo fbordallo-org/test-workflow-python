@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.3](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.2...v1.0.3) (2025-12-23)
+
+
+### Bug Fixes
+
+* cd workflow ([56bace5](https://github.com/fbordallo-org/test-workflow-python/commit/56bace512d4bc0048ea58d118bba38904abadbc6))
+* cd workflow ([b6accef](https://github.com/fbordallo-org/test-workflow-python/commit/b6accefdc44c805072fc1d81772ceb9b33948b0a))
+* cd workflow permissions ([b8fb31c](https://github.com/fbordallo-org/test-workflow-python/commit/b8fb31cb7820ce6dc250de508e1212c29d980813))
+* cd workflow permissions ([6eb6824](https://github.com/fbordallo-org/test-workflow-python/commit/6eb6824b85ccf9d20b976ce1a52600c5eca03ea5))
+
 ## [1.0.2](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.1...v1.0.2) (2025-12-23)
 
 
