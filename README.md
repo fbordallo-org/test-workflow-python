@@ -26,6 +26,7 @@ The API will be available at http://localhost:8000
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Returns Hello World message |
+| GET | `/health` | Returns health status |
 
 ## Running tests
 
