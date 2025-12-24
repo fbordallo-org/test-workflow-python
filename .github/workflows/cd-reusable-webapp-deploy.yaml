@@ -16,34 +16,37 @@ on:
         description: The environment to deploy to
         required: true
         type: string
+      dry-run:
+        description: Whether to perform a dry run
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy:
     name: 🚀 Deploy
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
     environment: ${{ inputs.environment }}
     steps:
-      - name: Deployment Step
+      - name: Deployment Dry Run
+        if: ${{ inputs.dry-run }}
         run: |
-          echo "Deploying Azure Web App ${{ inputs.webapp-name }} to environment ${{ inputs.environment }} with image ${{ inputs.docker-image }}"
+          echo "Dry Run - Deploying Azure Web App ${{ inputs.webapp-name }} to environment ${{ inputs.environment }} with image ${{ inputs.docker-image }}"
 
-#jobs:
-#  deploy:
-#    name: 🚀 Deploy
-#    runs-on: ubuntu-24.04
-#    permissions:
-#      id-token: write
-#      contents: read
-#    steps:
-#      - name: Azure Login (OIDC)
-#        uses: Azure/login@v2.3.0
-#        with:
-#          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-#          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-#          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-#
-#      - name: Deploy to Azure Web App
-#        uses: azure/webapps-deploy@v3.0.6
-#        with:
-#          app-name: ${{ inputs.webapp-name }}
-#          images: ${{ inputs.docker-image }}
+      - name: Azure Login (OIDC)
+        if: ${{ !inputs.dry-run }}
+        uses: Azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App
+        if: ${{ !inputs.dry-run }}
+        uses: azure/webapps-deploy@v3.0.6
+        with:
+          app-name: ${{ inputs.webapp-name }}
+          images: ${{ inputs.docker-image }}

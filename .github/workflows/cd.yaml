@@ -44,7 +44,7 @@ jobs:
     permissions:
       id-token: write
     with:
-      push: false # Set to true to push the image to ACR, dry run otherwise
+      push: false # Set to true to push the image to ACR, only build otherwise
       target: 'release'
       acr-name: ${{ vars.ACR_NAME }}
       tag: ${{ needs.release.outputs.version }}
@@ -55,6 +55,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
     with:
+      dry-run: true
       docker-image: ${{ needs.push-image.outputs.docker-image }}
       environment: 'development'
       webapp-name: ${{ vars.AZURE_WEBAPP_NAME_DEVELOPMENT }}
@@ -65,6 +66,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
     with:
+      dry-run: true
       docker-image: ${{ needs.push-image.outputs.docker-image }}
       environment: 'production'
       webapp-name: ${{ vars.AZURE_WEBAPP_NAME_PRODUCTION }}
