@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.1.1...v1.2.0) (2025-12-24)
+
+
+### Features
+
+* add .dockerignore ([40168f9](https://github.com/fbordallo-org/test-workflow-python/commit/40168f998e8d8145e38ba549511c342b9f5ebd85))
+
 ## [1.1.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.1.0...v1.1.1) (2025-12-24)
 
 
