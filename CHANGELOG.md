@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.1.0...v1.1.1) (2025-12-24)
+
+
+### Bug Fixes
+
+* trivy errors at Dockerfile ([83a1362](https://github.com/fbordallo-org/test-workflow-python/commit/83a136208d473d3c4945c41678f842822603820f))
+
 ## [1.1.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.6...v1.1.0) (2025-12-24)
 
 
