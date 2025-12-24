@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.6...v1.1.0) (2025-12-24)
+
+
+### Features
+
+* added health ([092a248](https://github.com/fbordallo-org/test-workflow-python/commit/092a248050fc3a5a89835a421ebab54beae20896))
+
+
+### Documentation
+
+* add health endpoint to readme ([44bb2c8](https://github.com/fbordallo-org/test-workflow-python/commit/44bb2c897bd3a738cd411b35307cdb77d977daf5))
+* add readme content ([8f82aed](https://github.com/fbordallo-org/test-workflow-python/commit/8f82aedbfb9604b826d5d7f0ced82f2b8f32f8e4))
+* add readme content ([712199c](https://github.com/fbordallo-org/test-workflow-python/commit/712199c81a5c018243e949a3380ad118f0ea3760))
+
 ## [1.0.6](https://github.com/fbordallo-org/test-workflow-python/compare/v1.0.5...v1.0.6) (2025-12-23)
 
 
