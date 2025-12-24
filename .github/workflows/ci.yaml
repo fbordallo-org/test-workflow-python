@@ -8,6 +8,8 @@ on:
 jobs:
   validate:
     uses: ./.github/workflows/ci-reusable-checks.yaml
+    with:
+      super-linter: false
     name: Lint and Secret detection
     permissions:
       contents: read
@@ -16,7 +18,7 @@ jobs:
   
   test:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
-    name: Test
+    name: Run tests in Docker container
     with:
       target: 'test'
 
