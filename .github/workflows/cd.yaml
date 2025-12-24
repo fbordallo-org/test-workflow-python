@@ -45,8 +45,11 @@ jobs:
       id-token: write
     with:
       push: false # Set to true to push the image to ACR, only build otherwise
-      target: 'release'
+      target: release
       acr-name: ${{ vars.ACR_NAME }}
+      scan-enabled: true
+      sign-image: true
+      sbom-enabled: true
       tag: ${{ needs.release.outputs.version }}
 
   deploy-development:

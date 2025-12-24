@@ -21,5 +21,13 @@ jobs:
     name: Run tests in Docker container
     with:
       target: 'test'
+      scan-enabled: false
+  
+  test-build:
+    uses: ./.github/workflows/cicd-reusable-docker.yaml
+    name: Run tests in Docker container
+    with:
+      target: release
+      scan-enabled: true
 
   

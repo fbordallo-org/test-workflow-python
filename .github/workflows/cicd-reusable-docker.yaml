@@ -4,6 +4,33 @@ name: 🐳 CI Reusable Docker Build and Push Workflow with ACR support
 on:
   workflow_call:
     inputs:
+      # Build Configuration
+      dockerfile:
+        description: Path to Dockerfile
+        required: false
+        default: "./Dockerfile"
+        type: string
+      context:
+        description: Build context path
+        required: false
+        default: "."
+        type: string
+      build-args:
+        description: Build arguments (multiline string)
+        required: false
+        type: string
+      platforms:
+        description: Target platforms (e.g., linux/amd64,linux/arm64)
+        required: false
+        default: "linux/amd64"
+        type: string
+      cache-enabled:
+        description: Enable GHA cache for builds
+        required: false
+        default: true
+        type: boolean
+
+      # Push Configuration
       push:
         description: Push the image to ACR
         required: false
@@ -25,19 +52,48 @@ on:
         description: Labels to add to the Docker image
         required: false
         type: string
+
+      # Security & Scanning
+      scan-enabled:
+        description: Run Trivy vulnerability scan
+        required: false
+        default: true
+        type: boolean
+      scan-fail-on:
+        description: Severity level to fail on (CRITICAL, HIGH, MEDIUM, LOW)
+        required: false
+        default: "CRITICAL,HIGH"
+        type: string
+      sign-image:
+        description: Sign image with cosign
+        required: false
+        default: false
+        type: boolean
+      sbom-enabled:
+        description: Generate Software Bill of Materials
+        required: false
+        default: false
+        type: boolean
+
     outputs:
       docker-image:
         description: The built (and pushed) Docker image
-        value: ${{ jobs.build-and-push.outputs.output1 }}
+        value: ${{ jobs.build-and-push.outputs.docker-image }}
+      image-digest:
+        description: The image digest for pinning
+        value: ${{ jobs.build-and-push.outputs.image-digest }}
+      scan-report:
+        description: Security scan results summary
+        value: ${{ jobs.build-and-push.outputs.scan-report }}
 
 jobs:
-
   build-and-push:
     name: 📦 Build Image and Push
     runs-on: ubuntu-24.04
     outputs:
-      # Docker image URI
-      output1: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+      docker-image: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+      image-digest: ${{ steps.docker-release.outputs.digest }}
+      scan-report: ${{ steps.trivy-scan.outputs.report }}
     steps:
       - name: Validate Inputs and Set Outputs
         id: validate-and-set-outputs
@@ -47,11 +103,21 @@ jobs:
           echo "  target: ${{ inputs.target }}"
           echo "  acr-name: ${{ inputs.acr-name }}"
           echo "  tag: ${{ inputs.tag }}"
-          # If push is true, ensure acr-name  and tag are not empty
+          echo "  dockerfile: ${{ inputs.dockerfile }}"
+          echo "  context: ${{ inputs.context }}"
+          echo "  platforms: ${{ inputs.platforms }}"
+          echo "  cache-enabled: ${{ inputs.cache-enabled }}"
+          echo "  scan-enabled: ${{ inputs.scan-enabled }}"
+          echo "  scan-fail-on: ${{ inputs.scan-fail-on }}"
+          echo "  sign-image: ${{ inputs.sign-image }}"
+          echo "  sbom-enabled: ${{ inputs.sbom-enabled }}"
+
+          # If push is true, ensure acr-name and tag are not empty
           if [ "${{ inputs.push }}" = "true" ] && [ -z "${{ inputs.acr-name }}" ] && [ -z "${{ inputs.tag }}" ]; then
             echo "Error: acr-name and tag are required when push is true"
             exit 1
           fi
+
           # Setup docker_image output based on inputs
           if [ "${{ inputs.push }}" = "true" ]; then
             echo "docker-image=${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ inputs.tag }}" >> $GITHUB_OUTPUT
@@ -65,7 +131,7 @@ jobs:
 
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v6.0.1
-      
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3.7.0
 
@@ -84,16 +150,86 @@ jobs:
         if: inputs.push == true
         run: az acr login --name ${{ inputs.acr-name }}
 
-      - name: Docker release
-        id: docker-release
+      # Build and load image locally for scanning
+      # Note: load is incompatible with multi-platform builds
+      - name: Build Docker Image
+        id: docker-build
         uses: docker/build-push-action@v6.18.0
         with:
-          context: .
-          # The full job depends on release creation, so we can directly push          
-          push: ${{ inputs.push }}
-          target: release
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          load: true
+          push: false
+          target: ${{ inputs.target }}
           tags: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
           labels: ${{ inputs.labels }}
+          build-args: ${{ inputs.build-args }}
+          cache-from: ${{ inputs.cache-enabled == true && 'type=gha' || '' }}
+          cache-to: ${{ inputs.cache-enabled == true && 'type=gha,mode=max' || '' }}
+
+      - name: Run Trivy Vulnerability Scan
+        id: trivy-scan
+        if: inputs.scan-enabled == true
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: ${{ inputs.scan-fail-on }}
+          output: "trivy-report.txt"
+
+      - name: Upload Trivy Scan Report
+        if: inputs.scan-enabled == true && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-report
+          path: trivy-report.txt
+          retention-days: 30
+
+      - name: Generate SBOM with Syft
+        if: inputs.sbom-enabled == true
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+          artifact-name: sbom.spdx.json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM
+        if: inputs.sbom-enabled == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+          retention-days: 30
+
+      # Push to ACR after scan passes (uses cached layers)
+      - name: Push to ACR
+        id: docker-release
+        if: inputs.push == true
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          target: ${{ inputs.target }}
+          tags: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+          labels: ${{ inputs.labels }}
+          platforms: ${{ inputs.platforms }}
+          build-args: ${{ inputs.build-args }}
           cache-from: type=gha
-          cache-to: type=gha,name=gha-cache
-          
+          sbom: ${{ inputs.sbom-enabled }}
+          provenance: ${{ inputs.sbom-enabled }}
+
+      - name: Install Cosign
+        if: inputs.sign-image == true && inputs.push == true
+        uses: sigstore/cosign-installer@v3.8.0
+
+      - name: Sign Image with Cosign
+        if: inputs.sign-image == true && inputs.push == true
+        env:
+          DIGEST: ${{ steps.docker-release.outputs.digest }}
+          IMAGE: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+        run: |
+          cosign sign --yes "${IMAGE}@${DIGEST}"
