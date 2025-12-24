@@ -4,9 +4,39 @@ name: 🛠️ CI Reusable Checks
 
 on:
   workflow_call:
+    inputs:
+      super-linter:
+        description: Whether to run super-linter
+        required: false
+        default: true
+        type: boolean
+
+      super-linter-slim:
+        description: Whether to run the slim version of super-linter
+        required: false
+        # super-linter is very bloated, so run the slim version by default
+        default: true
+        type: boolean
+
+      super-linter-env:
+        description: Environment variables to pass to super-linter
+        required: false
+        # Env file format:
+        #   VALIDATE_CHECKOV=true
+        #   VALIDATE_PYTHON=false
+        default: ''
+        type: string
+      
+      trufflehog:
+        description: Whether to run trufflehog secret detection
+        required: false
+        default: true
+        type: boolean
+
 
 jobs:
   trufflehog:
+    if: ${{ inputs.trufflehog }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -21,8 +51,8 @@ jobs:
         with:
           extra_args: --results=verified,unknown
 
-  linter:
-    if: false
+  super-linter:
+    if: ${{ inputs.super-linter }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -34,8 +64,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set environment variables for Super-linter
+        id: set-env
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "${{ inputs.super-linter-env }}" >> $GITHUB_ENV
+
+      - name: Super-linter Slim
+        if: ${{ inputs.super-linter-slim }}
+        uses: super-linter/super-linter/slim@v8.3.1
+      
       - name: Super-linter
+        if: ${{ !inputs.super-linter-slim }}
         uses: super-linter/super-linter@v8.3.1
-        env:
-          # To report GitHub Actions status checks
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

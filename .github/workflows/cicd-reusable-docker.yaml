@@ -25,17 +25,19 @@ on:
         description: Labels to add to the Docker image
         required: false
         type: string
+    outputs:
+      docker-image:
+        description: The built (and pushed) Docker image
+        value: ${{ jobs.build-and-push.outputs.output1 }}
 
 jobs:
 
   build-and-push:
     name: 📦 Build Image and Push
     runs-on: ubuntu-24.04
-    env:
-      DOCKER_IMAGE: ${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ inputs.tag }}
     outputs:
-      # The image was built and pushed successfully
-      docker-image: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+      # Docker image URI
+      output1: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
     steps:
       - name: Validate Inputs and Set Outputs
         id: validate-and-set-outputs
