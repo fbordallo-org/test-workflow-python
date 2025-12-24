@@ -4,13 +4,35 @@ name: 🐳 CI Reusable Docker Build and Push Workflow with ACR support
 on:
   workflow_call:
     inputs:
-      push:
-        description: Push the image to ACR
+      # Build Configuration
+      dockerfile:
+        description: Path to Dockerfile
+        required: false
+        default: "./Dockerfile"
+        type: string
+      context:
+        description: Build context path
+        required: false
+        default: "."
+        type: string
+      build-args:
+        description: Build arguments (multiline string)
+        required: false
+        type: string
+      cache-enabled:
+        description: Enable GHA cache for builds
+        required: false
+        default: true
+        type: boolean
+      dry-run:
+        description: Whether to perform a dry run (no Azure-ACR login/push/sign)
         required: false
         default: false
         type: boolean
+
+      # Push Configuration
       target:
-        description: The target stage to build in the Dockerfile
+        description: The target stage to build in the Dockerfile, e.g., build, test, release. 'release' enables pushing and scanning.
         required: false
         type: string
       acr-name:
@@ -25,55 +47,54 @@ on:
         description: Labels to add to the Docker image
         required: false
         type: string
+
+      # Security & Scanning
+      scan-fail-on:
+        description: Severity level to fail on (CRITICAL, HIGH, MEDIUM, LOW)
+        required: false
+        default: "CRITICAL,HIGH"
+        type: string
+      ignore-unfixed:
+        description: Whether to ignore unfixed vulnerabilities in the scan
+        required: false
+        default: false
+        type: boolean
+
     outputs:
       docker-image:
         description: The built (and pushed) Docker image
-        value: ${{ jobs.build-and-push.outputs.output1 }}
+        value: ${{ jobs.build-and-push.outputs.docker-image }}
+      image-digest:
+        description: The image digest for pinning
+        value: ${{ jobs.build-and-push.outputs.image-digest }}
+      scan-report:
+        description: Security scan results summary
+        value: ${{ jobs.build-and-push.outputs.scan-report }}
 
 jobs:
-
   build-and-push:
     name: 📦 Build Image and Push
     runs-on: ubuntu-24.04
     outputs:
-      # Docker image URI
-      output1: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+      docker-image: ${{ steps.setup-image-name.outputs.docker-image }}
+      image-digest: ${{ steps.docker-build.outputs.digest }}
+      scan-report: ${{ steps.trivy-scan.outputs.report }}
     steps:
-      - name: Validate Inputs and Set Outputs
-        id: validate-and-set-outputs
-        run: |
-          echo "Inputs:"
-          echo "  push: ${{ inputs.push }}"
-          echo "  target: ${{ inputs.target }}"
-          echo "  acr-name: ${{ inputs.acr-name }}"
-          echo "  tag: ${{ inputs.tag }}"
-          # If push is true, ensure acr-name  and tag are not empty
-          if [ "${{ inputs.push }}" = "true" ] && [ -z "${{ inputs.acr-name }}" ] && [ -z "${{ inputs.tag }}" ]; then
-            echo "Error: acr-name and tag are required when push is true"
-            exit 1
-          fi
-          # Setup docker_image output based on inputs
-          if [ "${{ inputs.push }}" = "true" ]; then
-            echo "docker-image=${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ inputs.tag }}" >> $GITHUB_OUTPUT
-          else
-            if [ -n "${{ inputs.target }}" ]; then
-              echo "docker-image=${{ github.repository }}:${{ inputs.target }}-build" >> $GITHUB_OUTPUT
-            else
-              echo "docker-image=${{ github.repository }}:final-build" >> $GITHUB_OUTPUT
-            fi
-          fi
-
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v6.0.1
-      
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3.7.0
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3.11.1
+      
+      - name: Install Cosign
+        if: inputs.target == 'release' && !inputs.dry-run
+        uses: sigstore/cosign-installer@v3.8.0
 
       - name: Azure Login (OIDC)
-        if: inputs.push == true
+        if: inputs.target == 'release' && !inputs.dry-run
         uses: Azure/login@v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -81,19 +102,92 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: ACR Login
-        if: inputs.push == true
+        if: inputs.target == 'release' && !inputs.dry-run
         run: az acr login --name ${{ inputs.acr-name }}
+      
+      - name: Setup Docker Image Name Output
+        id: setup-image-name
+        run: |
+          if [ "${{ inputs.target }}" == "release" ]; then
+            echo "docker-image=${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "docker-image=${{ github.repository }}:build" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Docker release
-        id: docker-release
+      # Build and load image locally for scanning
+      - name: Build Docker Image
+        id: docker-build
         uses: docker/build-push-action@v6.18.0
         with:
-          context: .
-          # The full job depends on release creation, so we can directly push          
-          push: ${{ inputs.push }}
-          target: release
-          tags: ${{ steps.validate-and-set-outputs.outputs.docker-image }}
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          # Load the image into local Docker if building for release
+          load: ${{ inputs.target == 'release' }}
+          # Local build for security scanning
+          push: false
+          target: ${{ inputs.target }}
+          tags: ${{ steps.setup-image-name.outputs.docker-image }}
           labels: ${{ inputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,name=gha-cache
-          
+          build-args: ${{ inputs.build-args }}
+          cache-from: ${{ inputs.cache-enabled == true && 'type=gha' || '' }}
+          cache-to: ${{ inputs.cache-enabled == true && 'type=gha,mode=max' || '' }}
+
+      - name: Run Trivy Vulnerability Scan
+        id: trivy-scan
+        if: inputs.target == 'release'
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.setup-image-name.outputs.docker-image }}
+          format: cosign-vuln
+          exit-code: "1"
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          vuln-type: "os,library"
+          severity: ${{ inputs.scan-fail-on }}
+          output: "trivy-scan.json"
+
+      - name: Upload Trivy Scan Report
+        if: inputs.target == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-report
+          path: trivy-scan.json
+          retention-days: 30
+
+      # Push to ACR after scan passes (uses cached layers)
+      # TODO: Build for multiple platforms
+      - name: Push to ACR
+        id: docker-release
+        if: inputs.target == 'release'
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: ${{ true && !inputs.dry-run }}
+          target: release
+          tags: ${{ steps.setup-image-name.outputs.docker-image }}
+          labels: ${{ inputs.labels }}
+          build-args: ${{ inputs.build-args }}
+          cache-from: ${{ inputs.cache-enabled == true && 'type=gha' || '' }}
+          cache-to: ${{ inputs.cache-enabled == true && 'type=gha,mode=max' || '' }}
+          sbom: true
+          provenance: true
+
+      - name: Sign Image with Cosign
+        if: inputs.target == 'release' && !inputs.dry-run
+        env:
+          DIGEST: ${{ steps.docker-release.outputs.digest }}
+          IMAGE: ${{ steps.setup-image-name.outputs.docker-image }}
+        run: |
+          cosign sign --yes "${IMAGE}@${DIGEST}"
+
+      - name: Attest Trivy Scan
+        if: inputs.target == 'release' && !inputs.dry-run
+        env:
+          DIGEST: ${{ steps.docker-release.outputs.digest }}
+          IMAGE: ${{ steps.setup-image-name.outputs.docker-image }}
+        run: |
+          cosign attest --yes \
+            --predicate trivy-scan.json \
+            --type vuln \
+            "${IMAGE}@${DIGEST}"
+      

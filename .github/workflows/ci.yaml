@@ -20,6 +20,11 @@ jobs:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
     name: Run tests in Docker container
     with:
-      target: 'test'
-
+      target: test
+  
+  test-build:
+    uses: ./.github/workflows/cicd-reusable-docker.yaml
+    name: Test image build
+    with:
+      target: build
   
