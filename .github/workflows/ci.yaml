@@ -27,4 +27,5 @@ jobs:
     name: Test image build
     with:
       target: build
+      scan-enabled: true
   
