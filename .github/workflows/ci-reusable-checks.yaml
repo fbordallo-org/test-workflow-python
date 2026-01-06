@@ -6,16 +6,15 @@ on:
   workflow_call:
     inputs:
       super-linter:
-        description: Whether to run super-linter
+        description: Whether to run super-linter (slim mode)
         required: false
-        default: true
+        default: false
         type: boolean
-
-      super-linter-slim:
-        description: Whether to run the slim version of super-linter
+      
+      super-linter-full:
+        description: Whether to run super-linter (full mode)
         required: false
-        # super-linter is very bloated, so run the slim version by default
-        default: true
+        default: false
         type: boolean
 
       super-linter-env:
@@ -23,34 +22,11 @@ on:
         required: false
         # Env file format:
         #   VALIDATE_CHECKOV=true
-        #   VALIDATE_PYTHON=false
+        #   VALIDATE_PYTHON=true
         default: ''
         type: string
       
-      trufflehog:
-        description: Whether to run trufflehog secret detection
-        required: false
-        default: true
-        type: boolean
-
-
 jobs:
-  trufflehog:
-    if: ${{ inputs.trufflehog }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Setup Trufflehog
-        uses: trufflesecurity/trufflehog@v3.92.3
-        with:
-          extra_args: --results=verified,unknown
-
   super-linter:
     if: ${{ inputs.super-linter }}
     runs-on: ubuntu-24.04
@@ -60,20 +36,45 @@ jobs:
       statuses: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set environment variables for Super-linter
         id: set-env
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-          echo "${{ inputs.super-linter-env }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> "$GITHUB_ENV"
+          echo "$SUPER_LINTER_ENV" >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPER_LINTER_ENV: ${{ inputs.super-linter-env }}
 
-      - name: Super-linter Slim
-        if: ${{ inputs.super-linter-slim }}
-        uses: super-linter/super-linter/slim@v8.3.1
-      
       - name: Super-linter
-        if: ${{ !inputs.super-linter-slim }}
-        uses: super-linter/super-linter@v8.3.1
+        uses: super-linter/super-linter/slim@47984f49b4e87383eed97890fe2dca6063bbd9c3 # v8.3.1
+
+  super-linter-full:
+    if: ${{ inputs.super-linter-full }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set environment variables for Super-linter
+        id: set-env
+        run: |
+          echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> "$GITHUB_ENV"
+          echo "$SUPER_LINTER_ENV" >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPER_LINTER_ENV: ${{ inputs.super-linter-env }}
+
+      - name: Super-linter
+        uses: super-linter/super-linter@47984f49b4e87383eed97890fe2dca6063bbd9c3 # v8.3.1

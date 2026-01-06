@@ -5,20 +5,13 @@ on:
     branches:
       - main
 
-permissions:
-  # required for release-please
-  contents: write
-  issues: write
-  pull-requests: write
-  # required for ACR login
-  id-token: write
-
 jobs:
   
   release:
     name: 🔖 Release
     runs-on: ubuntu-24.04
     permissions:
+      # Required by release-please
       contents: write
       issues: write
       pull-requests: write
@@ -27,7 +20,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       - name: Release Please
-        uses: googleapis/release-please-action@v4.4.0
+        uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
         with:
           release-type: python
@@ -40,8 +33,12 @@ jobs:
     # release-please can exit successfully without creating a release
     # and in that case we want to break the push and deployment steps
     if: needs.release.outputs.release-created == 'true'
-    secrets: inherit
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     permissions:
+      # Required for ACR push and cosing signing
       id-token: write
     with:
       dry-run: true # Remove or set to false to perform actual push
@@ -52,8 +49,13 @@ jobs:
   deploy-development:
     name: Deploy to Azure App Service Development
     needs: [release, push-image]
-    secrets: inherit
     uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
+    permissions:
+      id-token: write
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
     with:
       dry-run: true # Remove or set to false to perform actual deployment
       docker-image: ${{ needs.push-image.outputs.docker-image }}
@@ -63,8 +65,13 @@ jobs:
   deploy-production:
     name: Deploy to Azure App Service Production
     needs: [release, push-image, deploy-development]
-    secrets: inherit
     uses: ./.github/workflows/cd-reusable-webapp-deploy.yaml
+    permissions:
+      id-token: write
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
     with:
       dry-run: true # Remove or set to false to perform actual deployment
       docker-image: ${{ needs.push-image.outputs.docker-image }}
