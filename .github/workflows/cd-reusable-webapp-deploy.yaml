@@ -22,23 +22,37 @@ on:
         default: false
         type: boolean
 
+    secrets:
+      AZURE_CLIENT_ID:
+        description: Azure Client ID for OIDC login
+        required: true
+      AZURE_TENANT_ID:
+        description: Azure Tenant ID for OIDC login
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure Subscription ID for OIDC login
+        required: true
+
 jobs:
   deploy:
     name: 🚀 Deploy
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
-      contents: read
     environment: ${{ inputs.environment }}
     steps:
       - name: Deployment Dry Run
         if: ${{ inputs.dry-run }}
+        env:
+          WEBAPP_NAME: ${{ inputs.webapp-name }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          DOCKER_IMAGE: ${{ inputs.docker-image }}
         run: |
-          echo "Dry Run - Deploying Azure Web App ${{ inputs.webapp-name }} to environment ${{ inputs.environment }} with image ${{ inputs.docker-image }}"
+          echo "Dry Run - Deploying Azure Web App ${WEBAPP_NAME} to environment ${ENVIRONMENT} with image ${DOCKER_IMAGE}"
 
       - name: Azure Login (OIDC)
         if: ${{ !inputs.dry-run }}
-        uses: Azure/login@v2.3.0
+        uses: Azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -46,7 +60,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         if: ${{ !inputs.dry-run }}
-        uses: azure/webapps-deploy@v3.0.6
+        uses: azure/webapps-deploy@657f0700ea5214d56a0400d8ac5e8023c963d25d # v3.0.6
         with:
           app-name: ${{ inputs.webapp-name }}
           images: ${{ inputs.docker-image }}

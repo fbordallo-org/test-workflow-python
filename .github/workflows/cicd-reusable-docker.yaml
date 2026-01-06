@@ -70,6 +70,17 @@ on:
       scan-report:
         description: Security scan results summary
         value: ${{ jobs.build-and-push.outputs.scan-report }}
+    
+    secrets:
+      AZURE_CLIENT_ID:
+        description: Azure Client ID for OIDC login
+        required: false
+      AZURE_TENANT_ID:
+        description: Azure Tenant ID for OIDC login
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure Subscription ID for OIDC login
+        required: false
 
 jobs:
   build-and-push:
@@ -81,21 +92,23 @@ jobs:
       scan-report: ${{ steps.trivy-scan.outputs.report }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3.7.0
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3.11.1
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       
       - name: Install Cosign
         if: inputs.target == 'release' && !inputs.dry-run
-        uses: sigstore/cosign-installer@v3.8.0
+        uses: sigstore/cosign-installer@c56c2d3e59e4281cc41dea2217323ba5694b171e # v3.8.0
 
       - name: Azure Login (OIDC)
         if: inputs.target == 'release' && !inputs.dry-run
-        uses: Azure/login@v2.3.0
+        uses: Azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -103,22 +116,31 @@ jobs:
 
       - name: ACR Login
         if: inputs.target == 'release' && !inputs.dry-run
-        run: az acr login --name ${{ inputs.acr-name }}
+        env:
+          ACR_NAME: ${{ inputs.acr-name }}
+        run: az acr login --name "${ACR_NAME}"
       
       - name: Setup Docker Image Name Output
         id: setup-image-name
+        env:
+          TARGET: ${{ inputs.target }}
+          ACR_NAME: ${{ inputs.acr-name }}
+          TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          if [ "${{ inputs.target }}" == "release" ]; then
-            echo "docker-image=${{ inputs.acr-name }}.azurecr.io/${{ github.repository }}:${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          if [ "${TARGET}" == "release" ]; then
+            echo "docker-image=${ACR_NAME}.azurecr.io/${REPOSITORY}:${TAG}" >> "$GITHUB_OUTPUT"
           else
-            echo "docker-image=${{ github.repository }}:build" >> $GITHUB_OUTPUT
+            echo "docker-image=${REPOSITORY}:build" >> "$GITHUB_OUTPUT"
           fi
 
       # Build and load image locally for scanning
       - name: Build Docker Image
         id: docker-build
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
+          # this action is expected to receive user inputs directly, so no sanitization here
+          # zizmor: ignore[template-injection]
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
           # Load the image into local Docker if building for release or scanning
@@ -135,7 +157,7 @@ jobs:
         id: trivy-scan
         # Force scan on release builds or if scanning is explicitly enabled
         if: inputs.target == 'release' || inputs.scan-enabled == true
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           image-ref: ${{ steps.setup-image-name.outputs.docker-image }}
           format: cosign-vuln
@@ -147,7 +169,7 @@ jobs:
       - name: Upload Trivy Scan Report
         # Force scan upload on release builds or if scanning is explicitly enabled
         if: inputs.target == 'release' || inputs.scan-enabled == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: trivy-scan-report
           path: trivy-scan.json
@@ -158,8 +180,10 @@ jobs:
       - name: Push to ACR
         id: docker-release
         if: inputs.target == 'release'
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
+          # this action is expected to receive user inputs directly, so no sanitization here
+          # zizmor: ignore[template-injection]
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
           push: ${{ true && !inputs.dry-run }}

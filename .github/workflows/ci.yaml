@@ -9,7 +9,15 @@ jobs:
   validate:
     uses: ./.github/workflows/ci-reusable-checks.yaml
     with:
-      super-linter: false
+      super-linter: true
+      # Enable Python linting with Ruff and secret detection with GitLeaks
+      super-linter-env: |
+        VALIDATE_PYTHON_RUFF=true
+        VALIDATE_GITLEAKS=true
+        VALIDATE_TRIVY=true
+        VALIDATE_GITHUB_ACTIONS=true
+        VALIDATE_GITHUB_ACTIONS_ZIZMOR=true
+        VALIDATE_DOCKERFILE_HADOLINT=true
     name: Lint and Secret detection
     permissions:
       contents: read
@@ -21,6 +29,7 @@ jobs:
     name: Run tests in Docker container
     with:
       target: test
+    permissions: {}
   
   test-build:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
@@ -28,4 +37,6 @@ jobs:
     with:
       target: build
       scan-enabled: true
+    permissions: {}
+      
   
