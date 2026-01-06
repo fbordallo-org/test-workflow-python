@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.4.0...v1.4.1) (2026-01-06)
+
+
+### Bug Fixes
+
+* remove trufflehog ([6cfa0db](https://github.com/fbordallo-org/test-workflow-python/commit/6cfa0dbe61cf53ab06c534055b9988c9d90e5b79))
+
 ## [1.4.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.3.0...v1.4.0) (2026-01-06)
 
 
