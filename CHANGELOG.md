@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.2.0...v1.3.0) (2026-01-06)
+
+
+### Features
+
+* more parameters for docker workflow ([b36808c](https://github.com/fbordallo-org/test-workflow-python/commit/b36808c75377d8ce498983c3a7df9feaf4259dd3))
+
 ## [1.2.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.1.1...v1.2.0) (2025-12-24)
 
 
