@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.3.0...v1.4.0) (2026-01-06)
+
+
+### Features
+
+* allow trivy scan on non-release targets ([35d2052](https://github.com/fbordallo-org/test-workflow-python/commit/35d2052f41c7b092dd6f2d6ef8c491382d03dfe7))
+
 ## [1.3.0](https://github.com/fbordallo-org/test-workflow-python/compare/v1.2.0...v1.3.0) (2026-01-06)
 
 
