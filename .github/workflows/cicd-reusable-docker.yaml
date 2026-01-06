@@ -49,16 +49,16 @@ on:
         type: string
 
       # Security & Scanning
+      scan-enabled:
+        description: Whether to enable security scanning, defaults to true for 'release' target
+        required: false
+        default: false
+        type: boolean
       scan-fail-on:
         description: Severity level to fail on (CRITICAL, HIGH, MEDIUM, LOW)
         required: false
         default: "CRITICAL,HIGH"
         type: string
-      ignore-unfixed:
-        description: Whether to ignore unfixed vulnerabilities in the scan
-        required: false
-        default: false
-        type: boolean
 
     outputs:
       docker-image:
@@ -121,9 +121,8 @@ jobs:
         with:
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
-          # Load the image into local Docker if building for release
-          load: ${{ inputs.target == 'release' }}
-          # Local build for security scanning
+          # Load the image into local Docker if building for release or scanning
+          load: ${{ inputs.target == 'release' || inputs.scan-enabled }}
           push: false
           target: ${{ inputs.target }}
           tags: ${{ steps.setup-image-name.outputs.docker-image }}
@@ -134,19 +133,20 @@ jobs:
 
       - name: Run Trivy Vulnerability Scan
         id: trivy-scan
-        if: inputs.target == 'release'
+        # Force scan on release builds or if scanning is explicitly enabled
+        if: inputs.target == 'release' || inputs.scan-enabled == true
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ steps.setup-image-name.outputs.docker-image }}
           format: cosign-vuln
           exit-code: "1"
-          ignore-unfixed: ${{ inputs.ignore-unfixed }}
           vuln-type: "os,library"
           severity: ${{ inputs.scan-fail-on }}
           output: "trivy-scan.json"
 
       - name: Upload Trivy Scan Report
-        if: inputs.target == 'release'
+        # Force scan upload on release builds or if scanning is explicitly enabled
+        if: inputs.target == 'release' || inputs.scan-enabled == true
         uses: actions/upload-artifact@v4
         with:
           name: trivy-scan-report
