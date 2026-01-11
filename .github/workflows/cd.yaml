@@ -24,6 +24,7 @@ jobs:
         id: release
         with:
           release-type: python
+          skip-github-release: true
 
   push-image:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
