@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/fbordallo-org/test-workflow-python/compare/v1.4.1...v1.4.2) (2026-01-11)
+
+
+### Bug Fixes
+
+* test release-please skip-github-release ([e9d349a](https://github.com/fbordallo-org/test-workflow-python/commit/e9d349a7062f0b330cef7bc4be8321718b87c9b8))
+
 ## [1.4.1](https://github.com/fbordallo-org/test-workflow-python/compare/v1.4.0...v1.4.1) (2026-01-06)
 
 
