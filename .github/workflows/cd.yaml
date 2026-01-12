@@ -25,6 +25,11 @@ jobs:
         with:
           release-type: python
           skip-github-release: true
+      - name: Check outputs
+        run: |
+          echo "release-created: ${{ steps.release.outputs.release_created }}"
+          echo "version: ${{ steps.release.outputs.version }}"
+        
 
   push-image:
     uses: ./.github/workflows/cicd-reusable-docker.yaml
